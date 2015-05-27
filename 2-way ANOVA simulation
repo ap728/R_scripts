@@ -1,0 +1,35 @@
+Nj     <- c(24, 16, 2476, 2484)         # group sizes for 4 groups (ASCM, ASCF, CTRM, CTRF)
+mu     <- c(0.75, -1, 0, -2.55)         # expected values in groups (SDS scores)
+sigma  <- c(1, 1, 1, 1)                 # true standard deviations in groups
+mus    <- rep(mu, times=Nj)             # for use in rnorm(): vector of mus
+sigmas <- rep(sigma, times=Nj)          # for use in rnorm(): vector of true sds
+sex     <- factor(rep(c(1,2,1,2), times=Nj))    # factor for ANOVA
+diagnosis <-factor(rep(c(1,1,2,2), times=Nj))   # factor for ANOVA
+nsims  <- 1000                          # number of simulations
+
+#inefficient but should work: three separate functions to pull out each p value
+doSim_sex <- function() {                   # function to run one ANOVA on simulated data
+  DV <- rnorm(sum(Nj), mus, sigmas)   # data from all three groups
+  anova(lm(DV ~ sex + diagnosis + sex*diagnosis))["sex", "Pr(>F)"]  # sex p-value from ANOVA
+}
+
+doSim_diagnosis <- function() {                   # function to run one ANOVA on simulated data
+  DV <- rnorm(sum(Nj), mus, sigmas)   # data from all three groups
+  anova(lm(DV ~ sex + diagnosis + sex*diagnosis))["diagnosis", "Pr(>F)"]  # diagnosis p-value from ANOVA
+}
+
+doSim_interaction <- function() {                   # function to run one ANOVA on simulated data
+  DV <- rnorm(sum(Nj), mus, sigmas)   # data from all three groups
+  anova(lm(DV ~ sex + diagnosis + sex*diagnosis))["sex:diagnosis", "Pr(>F)"]  # interaction p-value from ANOVA
+}
+
+pVals_sex  <- replicate(nsims, doSim_sex())     # run the sex factor simulation nsims times
+
+pVals_diagnosis  <- replicate(nsims, doSim_diagnosis())     # run the diagnosis factor simulation nsims times
+
+pVals_interaction  <- replicate(nsims, doSim_interaction())     # run the simulation nsims times
+
+
+(power_sex <- sum(pVals_sex < 0.05) / nsims)    # fraction of significant ANOVAs sex
+(power_diagnosis <- sum(pVals_diagnosis < 0.05) / nsims)    # fraction of significant ANOVAs diagnosis
+(power_interaction <- sum(pVals_interaction < 0.05) / nsims)    # fraction of significant ANOVAs
